@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f4f7fb">
+  <title>جدولي — أسبوعك الدراسي بوضوح</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172a46;
+      --muted: #718096;
+      --canvas: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafd;
+      --line: #e4eaf2;
+      --blue: #3977d5;
+      --cyan: #49b7c4;
+      --coral: #e77e70;
+      --violet: #8871cf;
+      --gold: #d6a84e;
+      --shadow: 0 14px 38px rgba(31, 55, 86, .08);
+      --radius: 20px;
+      --hour-height: 72px;
+      --time-gutter: 62px;
+      font-family: "IBM Plex Sans Arabic", "Tahoma", "Arial", sans-serif;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --ink: #e8effa;
+      --muted: #9eacc1;
+      --canvas: #101927;
+      --surface: #182437;
+      --surface-soft: #1d2c42;
+      --line: #2b3b52;
+      --blue: #72a6f4;
+      --cyan: #63cbd4;
+      --coral: #f09688;
+      --violet: #aa94ec;
+      --gold: #e6bd69;
+      --shadow: 0 14px 38px rgba(0, 0, 0, .2);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 95% 0%, rgba(73, 183, 196, .09), transparent 30rem),
+        var(--canvas);
+      color: var(--ink);
+      transition: background .2s ease, color .2s ease;
+    }
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid rgba(57, 119, 213, .32);
+      outline-offset: 2px;
+    }
+    .app { width: min(1240px, 100%); margin: 0 auto; padding: 34px 28px 48px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 26px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      display: grid; place-items: center; width: 46px; height: 46px;
+      border-radius: 15px; color: white; background: var(--blue);
+      box-shadow: 0 8px 18px rgba(57, 119, 213, .23);
+    }
+    .brand-mark svg { width: 25px; height: 25px; }
+    .brand h1 { margin: 0; font-size: 1.3rem; letter-spacing: -.04em; }
+    .brand p { margin: 2px 0 0; color: var(--muted); font-size: .8rem; }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .icon-button, .secondary-button, .primary-button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+      cursor: pointer; transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+    .icon-button:hover, .secondary-button:hover, .primary-button:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+    .icon-button { width: 42px; height: 42px; }
+    .icon-button svg { width: 19px; height: 19px; }
+    .primary-button { padding: 11px 16px; border-color: var(--blue); background: var(--blue); color: white; font-weight: 700; }
+    .secondary-button { padding: 10px 14px; font-weight: 650; }
+    .primary-button svg, .secondary-button svg { width: 18px; height: 18px; }
+    .intro { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin: 10px 0 22px; }
+    .intro h2 { margin: 0; font-size: clamp(1.5rem, 3vw, 2.05rem); letter-spacing: -.045em; }
+    .intro p { margin: 7px 0 0; color: var(--muted); font-size: .93rem; }
+    .date-chip { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font-size: .82rem; white-space: nowrap; }
+    .date-chip svg { width: 16px; height: 16px; color: var(--blue); }
+    .next-card {
+      position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 17px;
+      padding: 18px 21px; margin-bottom: 22px; overflow: hidden;
+      border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow);
+    }
+    .next-card::before { content: ""; position: absolute; inset: 0 0 0 auto; width: 4px; background: var(--cyan); }
+    .next-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 16px; background: rgba(73, 183, 196, .13); color: var(--cyan); }
+    .next-icon svg { width: 23px; height: 23px; }
+    .eyebrow { color: var(--muted); font-size: .77rem; font-weight: 700; }
+    .next-info h3 { margin: 2px 0 3px; font-size: 1.06rem; }
+    .next-info p { margin: 0; color: var(--muted); font-size: .82rem; }
+    .countdown { min-width: 135px; text-align: left; }
+    .countdown strong { display: block; color: var(--blue); font-size: 1.2rem; letter-spacing: -.03em; }
+    .countdown span { color: var(--muted); font-size: .76rem; }
+    .board {
+      overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius);
+      background: var(--surface); box-shadow: var(--shadow);
+    }
+    .board-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 17px 20px; border-bottom: 1px solid var(--line); }
+    .board-head h3 { margin: 0; font-size: 1rem; }
+    .board-head p { margin: 4px 0 0; color: var(--muted); font-size: .77rem; }
+    .legend { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: .73rem; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
+    .legend-line { width: 17px; border-top: 2px solid var(--coral); }
+    .schedule-scroll { overflow: auto; scrollbar-color: var(--line) transparent; scrollbar-width: thin; }
+    .schedule { min-width: 720px; position: relative; }
+    .day-header, .day-column { display: grid; grid-template-columns: var(--time-gutter) repeat(5, minmax(0, 1fr)); }
+    .day-header { position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+    .day-label { min-height: 57px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; border-inline-start: 1px solid var(--line); color: var(--muted); font-size: .78rem; }
+    .day-label strong { color: var(--ink); font-size: .84rem; }
+    .day-label.today strong { color: var(--blue); }
+    .day-label.today::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--blue); position: absolute; margin-top: 38px; }
+    .time-labels { position: relative; width: var(--time-gutter); height: calc(var(--hour-height) * 12); background: var(--surface); }
+    .time-label { position: absolute; top: 0; inset-inline: 0; padding-inline: 8px; color: var(--muted); font-size: .7rem; transform: translateY(-50%); text-align: center; }
+    .time-label:first-child { transform: none; }
+    .day-column { position: absolute; top: 57px; inset-inline-start: var(--time-gutter); inset-inline-end: 0; height: calc(var(--hour-height) * 12); grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .day-track { position: relative; height: 100%; border-inline-start: 1px solid var(--line); background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--hour-height) - 1px), var(--line) calc(var(--hour-height) - 1px), var(--line) var(--hour-height)); }
+    .day-track.today-track { background-color: rgba(57, 119, 213, .025); }
+    .class-card {
+      position: absolute; z-index: 2; inset-inline: 5px; padding: 8px 9px;
+      overflow: hidden; border: 1px solid color-mix(in srgb, var(--class-color), transparent 64%);
+      border-inline-start: 3px solid var(--class-color); border-radius: 10px;
+      background: color-mix(in srgb, var(--class-color), var(--surface) 88%);
+      color: var(--ink); cursor: pointer; text-align: right; transition: filter .2s, transform .15s;
+    }
+    .class-card:hover { z-index: 4; transform: scale(1.015); filter: saturate(1.12); }
+    .class-card.ended { opacity: .48; filter: saturate(.55); }
+    .class-card strong { display: block; overflow: hidden; font-size: .76rem; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+    .class-card span { display: block; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: .65rem; text-overflow: ellipsis; white-space: nowrap; }
+    .now-line { position: absolute; z-index: 3; inset-inline: var(--time-gutter) 0; height: 2px; background: var(--coral); pointer-events: none; }
+    .now-line::before { content: ""; position: absolute; inset-inline-start: -4px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 3px rgba(231, 126, 112, .16); }
+    .now-line .now-label { position: absolute; inset-inline-start: 9px; top: -10px; padding: 2px 6px; border-radius: 5px; background: var(--coral); color: white; font-size: .62rem; }
+    .empty-state { display: none; padding: 38px 20px 42px; text-align: center; }
+    .empty-state.show { display: block; }
+    .empty-art { width: 62px; height: 62px; margin: 0 auto 12px; display: grid; place-items: center; border-radius: 20px; background: rgba(57, 119, 213, .1); color: var(--blue); }
+    .empty-art svg { width: 30px; height: 30px; }
+    .empty-state h3 { margin: 0 0 6px; }
+    .empty-state p { max-width: 370px; margin: 0 auto 17px; color: var(--muted); font-size: .86rem; }
+    .empty-state .actions { display: flex; justify-content: center; gap: 9px; flex-wrap: wrap; }
+    .toast { position: fixed; z-index: 20; inset-inline-start: 22px; bottom: 22px; max-width: min(440px, calc(100vw - 44px)); padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); font-size: .86rem; opacity: 0; transform: translateY(10px); pointer-events: none; transition: .22s ease; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { border-color: var(--coral); }
+    .modal-backdrop { position: fixed; z-index: 30; inset: 0; display: none; place-items: center; padding: 18px; background: rgba(13, 25, 42, .48); }
+    .modal-backdrop.open { display: grid; }
+    .modal { width: min(510px, 100%); max-height: min(92vh, 800px); overflow: auto; padding: 22px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: 0 24px 70px rgba(0, 0, 0, .25); }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .modal-head h2 { margin: 0; font-size: 1.2rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .field { display: grid; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { font-size: .79rem; font-weight: 700; }
+    .field input, .field select { width: 100%; min-height: 43px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); }
+    .color-options { display: flex; align-items: center; gap: 11px; min-height: 42px; }
+    .color-option input { position: absolute; opacity: 0; pointer-events: none; }
+    .color-option span { display: block; width: 27px; height: 27px; border: 3px solid var(--surface); border-radius: 50%; background: var(--swatch); box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+    .color-option input:checked + span { box-shadow: 0 0 0 2px var(--ink); }
+    .form-error { display: none; grid-column: 1 / -1; padding: 10px 12px; border-radius: 10px; background: rgba(231, 126, 112, .13); color: var(--coral); font-size: .8rem; }
+    .form-error.show { display: block; }
+    .modal-actions { display: flex; align-items: center; gap: 9px; margin-top: 20px; }
+    .modal-actions .spacer { flex: 1; }
+    .delete-button { border: 0; background: transparent; color: var(--coral); cursor: pointer; font-weight: 700; }
+    .delete-button[hidden] { display: none; }
+    .footnote { padding: 14px 4px 0; color: var(--muted); font-size: .72rem; text-align: center; }
+
+    @media (min-width: 900px) {
+      .schedule { min-width: 0; }
+      :root { --time-gutter: 70px; }
+      .time-labels { height: calc(var(--hour-height) * 12); }
+    }
+    @media (max-width: 620px) {
+      .app { padding: 19px 13px 30px; }
+      .topbar { margin-bottom: 21px; }
+      .brand-mark { width: 41px; height: 41px; }
+      .brand h1 { font-size: 1.14rem; }
+      .brand p { font-size: .7rem; }
+      .top-actions { gap: 7px; }
+      .primary-button { padding: 10px 12px; font-size: .83rem; }
+      .top-actions .primary-button svg { display: none; }
+      .intro { display: block; margin-bottom: 17px; }
+      .intro h2 { font-size: 1.55rem; }
+      .date-chip { margin-top: 13px; }
+      .next-card { grid-template-columns: auto 1fr; gap: 12px; padding: 14px; }
+      .next-icon { width: 42px; height: 42px; border-radius: 14px; }
+      .countdown { grid-column: 2; text-align: right; min-width: 0; }
+      .countdown strong { display: inline; margin-inline-end: 5px; font-size: 1rem; }
+      .countdown span { display: inline; }
+      .board-head { align-items: flex-start; padding: 15px; }
+      .legend { flex-direction: column; align-items: flex-start; gap: 6px; }
+      :root { --time-gutter: 50px; }
+      .day-header { grid-template-columns: var(--time-gutter) repeat(5, 132px); }
+      .day-column { grid-template-columns: repeat(5, 132px); }
+      .schedule { min-width: 710px; }
+      .class-card { inset-inline: 4px; padding: 7px; }
+      .class-card strong { font-size: .72rem; }
+      .class-card span { font-size: .62rem; }
+      .time-label { padding-inline: 4px; font-size: .65rem; }
+      .form-grid { gap: 11px; }
+      .modal { padding: 18px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M7.5 3v4M16.5 3v4M4 9.5h16M8 13h2m4 0h2M8 17h2"/></svg>
+        </div>
+        <div><h1>جدولي</h1><p>أسبوعك الدراسي، أوضح</p></div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-button" id="theme-toggle" type="button" aria-label="تفعيل الوضع الداكن" title="تغيير المظهر">
+          <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z"/></svg>
+        </button>
+        <button class="primary-button" id="add-class" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          أضف محاضرة
+        </button>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div><h2>جدولك الأسبوعي</h2><p>كل محاضراتك في مكان واحد، من الأحد إلى الخميس.</p></div>
+      <div class="date-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M7.5 3v4m9-4v4M4 9.5h16"/></svg>
+        <span id="today-date"></span>
+      </div>
+    </section>
+
+    <section class="next-card" aria-live="polite">
+      <div class="next-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+      </div>
+      <div class="next-info">
+        <span class="eyebrow" id="next-label">المحاضرة القادمة</span>
+        <h3 id="next-title">لا توجد محاضرات قادمة</h3>
+        <p id="next-detail">أضف محاضراتك لترى جدولك هنا.</p>
+      </div>
+      <div class="countdown"><strong id="countdown-value">—</strong><span id="countdown-label">حالة الجدول</span></div>
+    </section>
+
+    <section class="board" aria-label="الجدول الأسبوعي">
+      <div class="board-head">
+        <div><h3>المخطط الأسبوعي</h3><p>اضغط على أي محاضرة لتعديل تفاصيلها</p></div>
+        <div class="legend" aria-label="مفتاح الجدول">
+          <span><i class="legend-dot"></i> اليوم</span>
+          <span><i class="legend-line"></i> الوقت الآن</span>
+        </div>
+      </div>
+      <div class="empty-state" id="empty-state">
+        <div class="empty-art" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M7.5 2.5v4m9-4v4M3.5 9h17M8 13h3m-3 4h7"/></svg></div>
+        <h3>جدولك ينتظرك</h3>
+        <p>أضف أول محاضرة يدويًا، أو حمّل جدولًا تجريبيًا لتتعرف على طريقة العرض.</p>
+        <div class="actions">
+          <button class="primary-button" id="load-demo" type="button">تحميل جدول تجريبي</button>
+          <button class="secondary-button" id="empty-add" type="button">أضف محاضرة</button>
+        </div>
+      </div>
+      <div class="schedule-scroll" id="schedule-scroll">
+        <div class="schedule" id="schedule">
+          <div class="day-header" id="day-header">
+            <div></div>
+          </div>
+          <div class="time-labels" id="time-labels"></div>
+          <div class="day-column" id="day-column"></div>
+          <div class="now-line" id="now-line" hidden><span class="now-label">الآن</span></div>
+        </div>
+      </div>
+    </section>
+    <p class="footnote">بيانات جدولك محفوظة على هذا الجهاز فقط.</p>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="modal-backdrop" id="modal-backdrop" role="presentation">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <h2 id="modal-title">إضافة محاضرة</h2>
+        <button class="icon-button" id="close-modal" type="button" aria-label="إغلاق">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <form id="class-form">
+        <div class="form-grid">
+          <div class="field full"><label for="subject">اسم المادة</label><input id="subject" name="subject" maxlength="60" required placeholder="مثال: مبادئ التصميم"></div>
+          <div class="field"><label for="room">القاعة</label><input id="room" name="room" maxlength="40" placeholder="مثال: مبنى A، ٢٠٤"></div>
+          <div class="field"><label for="instructor">الدكتور</label><input id="instructor" name="instructor" maxlength="60" placeholder="اسم الدكتور"></div>
+          <div class="field"><label for="day">اليوم</label><select id="day" name="day" required></select></div>
+          <div class="field"><label for="start">وقت البداية</label><input id="start" name="start" type="time" min="08:00" max="20:00" required></div>
+          <div class="field"><label for="end">وقت النهاية</label><input id="end" name="end" type="time" min="08:00" max="20:00" required></div>
+          <div class="field"><label>لون المحاضرة</label><div class="color-options" id="color-options"></div></div>
+          <div class="form-error" id="form-error" role="alert"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="delete-button" id="delete-class" type="button" hidden>حذف المحاضرة</button>
+          <span class="spacer"></span>
+          <button class="secondary-button" id="cancel-modal" type="button">إلغاء</button>
+          <button class="primary-button" type="submit">حفظ المحاضرة</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    "use strict";
+
+    const DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+    const START_HOUR = 8;
+    const END_HOUR = 20;
+    const HOUR_HEIGHT = 72;
+    const STORAGE_KEY = "jadwali-classes-v1";
+    const THEME_KEY = "jadwali-theme-v1";
+    const COLORS = [
+      { name: "أزرق", value: "#3977d5" },
+      { name: "سماوي", value: "#49b7c4" },
+      { name: "مرجاني", value: "#e77e70" },
+      { name: "بنفسجي", value: "#8871cf" },
+      { name: "ذهبي", value: "#d6a84e" }
+    ];
+    const $ = (selector) => document.querySelector(selector);
+    let classes = [];
+    let editingId = null;
+    let toastTimer = null;
+
+    function safeRead(key, fallback) {
+      try {
+        const value = localStorage.getItem(key);
+        return value === null ? fallback : value;
+      } catch (error) {
+        showToast("تعذّر قراءة الحفظ المحلي. تحقق من إعدادات التخزين في المتصفح.", true);
+        return fallback;
+      }
+    }
+
+    function saveClasses() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(classes));
+        return true;
+      } catch (error) {
+        showToast("تعذّر حفظ الجدول على هذا الجهاز. تحقق من مساحة التخزين وإعدادات المتصفح.", true);
+        return false;
+      }
+    }
+
+    function readClasses() {
+      const raw = safeRead(STORAGE_KEY, "[]");
+      try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) throw new Error("بيانات الجدول ليست قائمة.");
+        return parsed.filter((item) =>
+          item && typeof item.id === "string" && typeof item.subject === "string" &&
+          Number.isInteger(item.day) && item.day >= 0 && item.day < DAYS.length &&
+          isValidTime(item.start) && isValidTime(item.end) && item.start < item.end &&
+          COLORS.some((color) => color.value === item.color)
+        );
+      } catch (error) {
+        showToast("بيانات الجدول المحفوظة غير صالحة؛ ابدأ جدولًا جديدًا أو حمّل جدولًا تجريبيًا.", true);
+        return [];
+      }
+    }
+
+    function isValidTime(value) {
+      return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+    }
+
+    function timeToMinutes(value) {
+      const [hours, minutes] = value.split(":").map(Number);
+      return hours * 60 + minutes;
+    }
+
+    function formatTime(value) {
+      const [hours, minutes] = value.split(":").map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      return new Intl.DateTimeFormat("ar", { hour: "numeric", minute: "2-digit" }).format(date);
+    }
+
+    function showToast(message, isError = false) {
+      const toast = $("#toast");
+      toast.textContent = message;
+      toast.classList.toggle("error", isError);
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 4200);
+    }
+
+    function setupBoard() {
+      $("#day-header").innerHTML = "<div></div>";
+      DAYS.forEach((day, index) => {
+        const label = document.createElement("div");
+        label.className = "day-label";
+        label.dataset.day = index;
+        label.innerHTML = `<strong>${day}</strong><span></span>`;
+        $("#day-header").append(label);
+      });
+
+      $("#time-labels").innerHTML = "";
+      for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
+        const label = document.createElement("div");
+        label.className = "time-label";
+        label.style.top = `${(hour - START_HOUR) * HOUR_HEIGHT}px`;
+        label.textContent = new Intl.DateTimeFormat("ar", { hour: "numeric" }).format(new Date(2020, 0, 1, hour));
+        $("#time-labels").append(label);
+      }
+
+      $("#day-column").innerHTML = "";
+      DAYS.forEach((day, index) => {
+        const track = document.createElement("div");
+        track.className = "day-track";
+        track.dataset.day = index;
+        $("#day-column").append(track);
+      });
+
+      $("#day").innerHTML = DAYS.map((day, index) => `<option value="${index}">${day}</option>`).join("");
+      $("#color-options").innerHTML = COLORS.map((color, index) =>
+        `<label class="color-option" title="${color.name}"><input type="radio" name="color" value="${color.value}" ${index === 0 ? "checked" : ""} required><span style="--swatch:${color.value}"></span></label>`
+      ).join("");
+    }
+
+    function updateDateAndDay() {
+      const now = new Date();
+      $("#today-date").textContent = new Intl.DateTimeFormat("ar", { weekday: "long", day: "numeric", month: "long" }).format(now);
+      const today = now.getDay();
+      document.querySelectorAll(".day-label").forEach((label) => {
+        const dayIndex = Number(label.dataset.day);
+        label.classList.toggle("today", dayIndex === today);
+        label.querySelector("span").textContent = dayIndex === today ? "اليوم" : "";
+      });
+    }
+
+    function renderSchedule() {
+      updateDateAndDay();
+      document.querySelectorAll(".day-track").forEach((track) => { track.innerHTML = ""; });
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const todayIndex = dayOfWeek < DAYS.length ? dayOfWeek : -1;
+
+      document.querySelectorAll(".day-track").forEach((track) => {
+        const day = Number(track.dataset.day);
+        track.classList.toggle("today-track", day === todayIndex);
+        classes.filter((item) => item.day === day).forEach((item) => {
+          const start = timeToMinutes(item.start);
+          const end = timeToMinutes(item.end);
+          // ارتفاع الكتلة يعكس مدة المحاضرة بالدقائق.
+          const top = ((start - START_HOUR * 60) / 60) * HOUR_HEIGHT;
+          const height = ((end - start) / 60) * HOUR_HEIGHT;
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = "class-card";
+          card.style.setProperty("--class-color", item.color);
+          card.style.top = `${top}px`;
+          card.style.height = `${height}px`;
+          card.setAttribute("aria-label", `${item.subject}، ${formatTime(item.start)} إلى ${formatTime(item.end)}، اضغط للتعديل`);
+          card.innerHTML = `<strong>${escapeHtml(item.subject)}</strong><span>${formatTime(item.start)} – ${formatTime(item.end)}${item.room ? ` · ${escapeHtml(item.room)}` : ""}</span>`;
+          const hasEnded = day < todayIndex || (day === todayIndex && end <= currentMinutes);
+          if (hasEnded) card.classList.add("ended");
+          card.addEventListener("click", () => openModal(item.id));
+          track.append(card);
+        });
+      });
+
+      const nowLine = $("#now-line");
+      const isWeekday = todayIndex >= 0;
+      const inVisibleHours = currentMinutes >= START_HOUR * 60 && currentMinutes <= END_HOUR * 60;
+      nowLine.hidden = !(isWeekday && inVisibleHours);
+      if (!nowLine.hidden) {
+        const y = ((currentMinutes - START_HOUR * 60) / 60) * HOUR_HEIGHT;
+        nowLine.style.top = `${57 + y}px`;
+        nowLine.style.gridColumn = String(todayIndex + 2);
+        nowLine.style.insetInlineStart = `calc(var(--time-gutter) + (100% - var(--time-gutter)) / 5 * ${todayIndex})`;
+        nowLine.style.insetInlineEnd = "auto";
+        nowLine.style.width = `calc((100% - var(--time-gutter)) / 5)`;
+      } else {
+        nowLine.style.width = "";
+        nowLine.style.insetInlineStart = "";
+        nowLine.style.insetInlineEnd = "";
+      }
+      $("#empty-state").classList.toggle("show", classes.length === 0);
+      $("#schedule-scroll").style.display = classes.length === 0 ? "none" : "block";
+      renderNextClass(now);
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[character]);
+    }
+
+    function getUpcomingOrCurrent(now) {
+      const today = now.getDay();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const options = [];
+      classes.forEach((item) => {
+        let dayDelta = (item.day - today + 7) % 7;
+        const start = timeToMinutes(item.start);
+        const end = timeToMinutes(item.end);
+        if (dayDelta === 0 && nowMinutes >= start && nowMinutes < end) {
+          options.push({ item, dayDelta, running: true, remaining: end - nowMinutes });
+        } else {
+          if (dayDelta === 0 && nowMinutes >= end) dayDelta = 7;
+          const minutesUntil = dayDelta * 24 * 60 + start - nowMinutes;
+          if (minutesUntil >= 0) options.push({ item, dayDelta, running: false, remaining: minutesUntil });
+        }
+      });
+      options.sort((a, b) => a.remaining - b.remaining);
+      return options[0] || null;
+    }
+
+    function renderNextClass(now) {
+      const next = getUpcomingOrCurrent(now);
+      const label = $("#next-label");
+      if (!next) {
+        label.textContent = "المحاضرة القادمة";
+        $("#next-title").textContent = "لا توجد محاضرات قادمة";
+        $("#next-detail").textContent = classes.length ? "أضف محاضرة جديدة ليظهر موعدها هنا." : "أضف محاضراتك لترى جدولك هنا.";
+        $("#countdown-value").textContent = "—";
+        $("#countdown-label").textContent = "حالة الجدول";
+        return;
+      }
+      const item = next.item;
+      label.textContent = next.running ? "المحاضرة الجارية" : "المحاضرة القادمة";
+      $("#next-title").textContent = item.subject;
+      const dayText = next.dayDelta === 0 ? "اليوم" : next.dayDelta === 1 ? "غدًا" : DAYS[item.day];
+      const timeText = next.running
+        ? `تنتهي ${formatTime(item.end)}${item.room ? ` · ${item.room}` : ""}`
+        : `${dayText}، ${formatTime(item.start)}${item.room ? ` · ${item.room}` : ""}`;
+      $("#next-detail").textContent = timeText;
+      const hours = Math.floor(next.remaining / 60);
+      const minutes = next.remaining % 60;
+      $("#countdown-value").textContent = next.running
+        ? `${hours ? `${hours} س ` : ""}${minutes} د`
+        : hours >= 24 ? `${Math.floor(hours / 24)} يوم ${hours % 24 ? `${hours % 24} س` : ""}` : `${hours ? `${hours} س ` : ""}${minutes} د`;
+      $("#countdown-label").textContent = next.running ? "تنتهي بعد" : "تبدأ بعد";
+    }
+
+    function openModal(id = null) {
+      editingId = id;
+      const form = $("#class-form");
+      form.reset();
+      $("#form-error").classList.remove("show");
+      const item = id ? classes.find((entry) => entry.id === id) : null;
+      $("#modal-title").textContent = item ? "تعديل محاضرة" : "إضافة محاضرة";
+      $("#delete-class").hidden = !item;
+      if (item) {
+        $("#subject").value = item.subject;
+        $("#room").value = item.room || "";
+        $("#instructor").value = item.instructor || "";
+        $("#day").value = String(item.day);
+        $("#start").value = item.start;
+        $("#end").value = item.end;
+        const radio = document.querySelector(`input[name="color"][value="${item.color}"]`);
+        if (radio) radio.checked = true;
+      } else {
+        $("#day").value = String(new Date().getDay() < DAYS.length ? new Date().getDay() : 0);
+        $("#start").value = "09:00";
+        $("#end").value = "10:00";
+        document.querySelector('input[name="color"]').checked = true;
+      }
+      $("#modal-backdrop").classList.add("open");
+      setTimeout(() => $("#subject").focus(), 0);
+    }
+
+    function closeModal() {
+      $("#modal-backdrop").classList.remove("open");
+      editingId = null;
+    }
+
+    function conflictFor(candidate) {
+      return classes.find((item) => item.id !== candidate.id && item.day === candidate.day &&
+        candidate.start < item.end && candidate.end > item.start);
+    }
+
+    function saveForm(event) {
+      event.preventDefault();
+      const form = new FormData($("#class-form"));
+      const candidate = {
+        id: editingId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`),
+        subject: String(form.get("subject")).trim(),
+        room: String(form.get("room")).trim(),
+        instructor: String(form.get("instructor")).trim(),
+        day: Number(form.get("day")),
+        start: String(form.get("start")),
+        end: String(form.get("end")),
+        color: String(form.get("color"))
+      };
+      const error = $("#form-error");
+      if (!candidate.subject) {
+        error.textContent = "اكتب اسم المادة قبل حفظ المحاضرة.";
+        error.classList.add("show");
+        return;
+      }
+      if (!isValidTime(candidate.start) || !isValidTime(candidate.end) ||
+          timeToMinutes(candidate.start) < START_HOUR * 60 ||
+          timeToMinutes(candidate.end) > END_HOUR * 60 ||
+          candidate.start >= candidate.end) {
+        error.textContent = "وقت المحاضرة غير صحيح. اختر وقتًا بين ٨ صباحًا و٨ مساءً، واجعل النهاية بعد البداية.";
+        error.classList.add("show");
+        return;
+      }
+      const conflict = conflictFor(candidate);
+      if (conflict) {
+        error.textContent = `يوجد تعارض يوم ${DAYS[candidate.day]} مع «${conflict.subject}» (${formatTime(conflict.start)}–${formatTime(conflict.end)}). اختر وقتًا آخر أو عدّل المحاضرة المتعارضة.`;
+        error.classList.add("show");
+        return;
+      }
+      const previous = classes;
+      classes = editingId ? classes.map((item) => item.id === editingId ? candidate : item) : [...classes, candidate];
+      if (!saveClasses()) {
+        classes = previous;
+        return;
+      }
+      closeModal();
+      renderSchedule();
+      showToast(editingId ? "تم تحديث المحاضرة." : "تم حفظ المحاضرة.");
+    }
+
+    function deleteClass() {
+      const previous = classes;
+      classes = classes.filter((item) => item.id !== editingId);
+      if (!saveClasses()) {
+        classes = previous;
+        return;
+      }
+      closeModal();
+      renderSchedule();
+      showToast("تم حذف المحاضرة.");
+    }
+
+    function loadDemo() {
+      const demo = [
+        { subject: "مبادئ التصميم", room: "مبنى الفنون · ٢٠٤", instructor: "د. نورة السالم", day: 0, start: "09:00", end: "10:30", color: COLORS[0].value },
+        { subject: "برمجة تطبيقات الويب", room: "معمل الحاسب · ١١٢", instructor: "د. سامي العتيبي", day: 0, start: "11:00", end: "13:00", color: COLORS[1].value },
+        { subject: "مهارات التواصل", room: "قاعة ٣٠٦", instructor: "د. هدى فهد", day: 1, start: "10:00", end: "11:00", color: COLORS[2].value },
+        { subject: "قواعد البيانات", room: "معمل الحاسب · ١٠٨", instructor: "د. ياسر الحربي", day: 1, start: "12:00", end: "14:00", color: COLORS[3].value },
+        { subject: "مبادئ التصميم", room: "مبنى الفنون · ٢٠٤", instructor: "د. نورة السالم", day: 2, start: "09:00", end: "10:30", color: COLORS[0].value },
+        { subject: "تحليل البيانات", room: "قاعة ٢١٠", instructor: "د. ريم القحطاني", day: 2, start: "13:00", end: "15:00", color: COLORS[4].value },
+        { subject: "برمجة تطبيقات الويب", room: "معمل الحاسب · ١١٢", instructor: "د. سامي العتيبي", day: 3, start: "10:00", end: "12:00", color: COLORS[1].value },
+        { subject: "مهارات التواصل", room: "قاعة ٣٠٦", instructor: "د. هدى فهد", day: 4, start: "09:30", end: "10:30", color: COLORS[2].value },
+        { subject: "قواعد البيانات", room: "معمل الحاسب · ١٠٨", instructor: "د. ياسر الحربي", day: 4, start: "12:00", end: "14:00", color: COLORS[3].value }
+      ].map((item) => ({ ...item, id: `${Date.now()}-${Math.random().toString(16).slice(2)}` }));
+      const previous = classes;
+      classes = demo;
+      if (!saveClasses()) {
+        classes = previous;
+        return;
+      }
+      renderSchedule();
+      showToast("تم تحميل الجدول التجريبي. يمكنك تعديل أي محاضرة أو حذفها.");
+    }
+
+    function toggleTheme() {
+      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = next;
+      try {
+        localStorage.setItem(THEME_KEY, next);
+      } catch (error) {
+        showToast("تعذّر حفظ تفضيل المظهر، لكن سيبقى التغيير فعالًا لهذه الجلسة.", true);
+      }
+      $("#theme-toggle").setAttribute("aria-label", next === "dark" ? "تفعيل الوضع الفاتح" : "تفعيل الوضع الداكن");
+      $("#theme-icon").innerHTML = next === "dark"
+        ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>'
+        : '<path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z"/>';
+    }
+
+    function initTheme() {
+      const preferred = safeRead(THEME_KEY, "light");
+      document.documentElement.dataset.theme = preferred === "dark" ? "dark" : "light";
+      if (preferred === "dark") {
+        $("#theme-toggle").setAttribute("aria-label", "تفعيل الوضع الفاتح");
+        $("#theme-icon").innerHTML = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>';
+      }
+    }
+
+    setupBoard();
+    initTheme();
+    classes = readClasses();
+    renderSchedule();
+    $("#add-class").addEventListener("click", () => openModal());
+    $("#empty-add").addEventListener("click", () => openModal());
+    $("#load-demo").addEventListener("click", loadDemo);
+    $("#theme-toggle").addEventListener("click", toggleTheme);
+    $("#close-modal").addEventListener("click", closeModal);
+    $("#cancel-modal").addEventListener("click", closeModal);
+    $("#modal-backdrop").addEventListener("click", (event) => {
+      if (event.target === $("#modal-backdrop")) closeModal();
+    });
+    $("#class-form").addEventListener("submit", saveForm);
+    $("#delete-class").addEventListener("click", deleteClass);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && $("#modal-backdrop").classList.contains("open")) closeModal();
+    });
+    setInterval(renderSchedule, 30000);
+  </script>
+</body>
+</html>
